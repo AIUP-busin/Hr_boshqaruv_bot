@@ -20,3 +20,5 @@ services:
         sync: false
       - key: DEV_MODE
         value: "false"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
