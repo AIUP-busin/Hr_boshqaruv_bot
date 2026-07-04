@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: hr-boshqaruv-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn webapp.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: DEV_MODE
+        value: "false"
