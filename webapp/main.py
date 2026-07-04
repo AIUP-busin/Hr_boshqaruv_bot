@@ -135,6 +135,18 @@ async def api_checkout(employee: dict = Depends(require_employee)):
     return {"ok": ok}
 
 
+@app.post("/api/attendance/lunch-out")
+async def api_lunch_out(employee: dict = Depends(require_employee)):
+    ok = await db.lunch_out(employee["id"])
+    return {"ok": ok}
+
+
+@app.post("/api/attendance/lunch-in")
+async def api_lunch_in(employee: dict = Depends(require_employee)):
+    ok = await db.lunch_in(employee["id"])
+    return {"ok": ok}
+
+
 @app.get("/api/attendance/today")
 async def api_today(employee: dict = Depends(require_employee)):
     return await db.get_today_attendance(employee["id"]) or {}

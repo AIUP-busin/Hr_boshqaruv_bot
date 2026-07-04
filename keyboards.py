@@ -16,6 +16,8 @@ ADMIN_MENU = [
 
 EMPLOYEE_MENU = [
     "✅ Keldim",
+    "🍽 Tushlikka chiqdim",
+    "🍽 Tushlikdan keldim",
     "🚪 Ketdim",
     "🌴 Ta'til so'rash",
     "📜 Ta'til tarixim",
@@ -37,7 +39,7 @@ def employee_main_menu() -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
     for label in EMPLOYEE_MENU:
         builder.button(text=label)
-    builder.adjust(2, 2, 2, 1)
+    builder.adjust(2, 2, 2, 2, 1)
     return builder.as_markup(resize_keyboard=True)
 
 

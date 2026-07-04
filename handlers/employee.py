@@ -47,6 +47,38 @@ async def check_out(message: Message) -> None:
             await message.answer("ℹ️ Siz bugun allaqachon ketganingizni qayd etgansiz.")
 
 
+@router.message(StateFilter(None), F.text == "🍽 Tushlikka chiqdim")
+async def lunch_out(message: Message) -> None:
+    employee = await _get_approved_employee(message)
+    if not employee:
+        return
+    ok = await db.lunch_out(employee["id"])
+    if ok:
+        await message.answer("🍽 Tushlikka chiqishingiz qayd etildi. Yoqimli ishtaha!")
+    else:
+        today = await db.get_today_attendance(employee["id"])
+        if not today or not today["check_in"]:
+            await message.answer("❗ Avval \"✅ Keldim\" tugmasini bosing.")
+        else:
+            await message.answer("ℹ️ Bugun allaqachon tushlikka chiqishingizni qayd etgansiz.")
+
+
+@router.message(StateFilter(None), F.text == "🍽 Tushlikdan keldim")
+async def lunch_in(message: Message) -> None:
+    employee = await _get_approved_employee(message)
+    if not employee:
+        return
+    ok = await db.lunch_in(employee["id"])
+    if ok:
+        await message.answer("🍽 Tushlikdan qaytishingiz qayd etildi. Ishga xush kelibsiz!")
+    else:
+        today = await db.get_today_attendance(employee["id"])
+        if not today or not today["lunch_out"]:
+            await message.answer("❗ Avval \"🍽 Tushlikka chiqdim\" tugmasini bosing.")
+        else:
+            await message.answer("ℹ️ Bugun allaqachon tushlikdan qaytishingizni qayd etgansiz.")
+
+
 @router.message(StateFilter(None), F.text == "👤 Profilim")
 async def profile(message: Message) -> None:
     employee = await _get_approved_employee(message)

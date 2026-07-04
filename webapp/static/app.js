@@ -28,6 +28,21 @@ function applyTheme() {
   });
 }
 
+function applyAutoNightMode() {
+  const hour = new Date().getHours();
+  const isNight = hour >= 20 || hour < 7;
+  const root = document.documentElement.style;
+  if (isNight) {
+    root.setProperty('--tg-bg', '#0f1115');
+    root.setProperty('--tg-text', '#f2f2f2');
+    root.setProperty('--tg-hint', '#9a9da3');
+    root.setProperty('--tg-secondary-bg', '#1c1e24');
+    document.body.classList.add('night-mode');
+  } else {
+    document.body.classList.remove('night-mode');
+  }
+}
+
 function toast(msg) {
   toastEl.textContent = msg;
   toastEl.classList.remove('hidden');
@@ -83,6 +98,8 @@ async function init() {
     tg.expand();
     applyTheme();
   }
+  applyAutoNightMode();
+  setInterval(applyAutoNightMode, 10 * 60 * 1000);
   if (!initData && !devTgId) {
     renderCenter('🔒', 'Avtorizatsiya topilmadi', 'Iltimos, ilovani Telegram bot orqali oching.');
     return;
@@ -205,6 +222,13 @@ async function renderEmployeeTab(employee) {
 
 async function renderEmpHome(container, employee) {
   const today = await api('/api/attendance/today');
+  const t = (v) => (v ? v.slice(11, 16) : '--:--');
+
+  const canCheckin = !today.check_in;
+  const canLunchOut = !!today.check_in && !today.lunch_out && !today.check_out;
+  const canLunchIn = !!today.lunch_out && !today.lunch_in && !today.check_out;
+  const canCheckout = !!today.check_in && !today.check_out;
+
   container.innerHTML = `
     <div class="header-gradient">
       <div class="greeting">👋 Salom, ${escapeHtml(employee.full_name.split(' ')[0])}!</div>
@@ -213,37 +237,49 @@ async function renderEmpHome(container, employee) {
     <div class="content" style="margin-top:-28px;">
       <div class="card">
         <div class="card-title">Bugungi davomat</div>
-        <div class="attendance-status">
+        <div class="attendance-status four">
           <div class="box">
-            <div class="time">${today.check_in ? today.check_in.slice(11, 16) : '--:--'}</div>
+            <div class="time">${t(today.check_in)}</div>
             <div class="label">Keldim</div>
           </div>
           <div class="box">
-            <div class="time">${today.check_out ? today.check_out.slice(11, 16) : '--:--'}</div>
+            <div class="time">${t(today.lunch_out)}</div>
+            <div class="label">Tushlikka</div>
+          </div>
+          <div class="box">
+            <div class="time">${t(today.lunch_in)}</div>
+            <div class="label">Tushlikdan</div>
+          </div>
+          <div class="box">
+            <div class="time">${t(today.check_out)}</div>
             <div class="label">Ketdim</div>
           </div>
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn" id="btn-checkin" ${today.check_in ? 'disabled' : ''}>✅ Keldim</button>
-        <button class="btn secondary" id="btn-checkout" ${(!today.check_in || today.check_out) ? 'disabled' : ''}>🚪 Ketdim</button>
+        <button class="btn" id="btn-checkin" ${canCheckin ? '' : 'disabled'}>✅ Keldim</button>
+        <button class="btn secondary" id="btn-lunchout" ${canLunchOut ? '' : 'disabled'}>🍽 Tushlikka chiqdim</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btn-lunchin" ${canLunchIn ? '' : 'disabled'}>🍽 Tushlikdan keldim</button>
+        <button class="btn danger" id="btn-checkout" ${canCheckout ? '' : 'disabled'}>🚪 Ketdim</button>
       </div>
     </div>`;
 
-  document.getElementById('btn-checkin').addEventListener('click', async () => {
-    try {
-      const r = await api('/api/attendance/checkin', { method: 'POST' });
-      toast(r.ok ? '✅ Kelganingiz qayd etildi' : 'Allaqachon qayd etilgan');
-      renderEmpHome(container, employee);
-    } catch (e) { toast(e.message); }
-  });
-  document.getElementById('btn-checkout').addEventListener('click', async () => {
-    try {
-      const r = await api('/api/attendance/checkout', { method: 'POST' });
-      toast(r.ok ? '🚪 Ketganingiz qayd etildi' : 'Amalga oshmadi');
-      renderEmpHome(container, employee);
-    } catch (e) { toast(e.message); }
-  });
+  const bind = (id, endpoint, okMsg) => {
+    document.getElementById(id).addEventListener('click', async () => {
+      try {
+        const r = await api(endpoint, { method: 'POST' });
+        toast(r.ok ? okMsg : 'Amalga oshmadi');
+        renderEmpHome(container, employee);
+      } catch (e) { toast(e.message); }
+    });
+  };
+
+  bind('btn-checkin', '/api/attendance/checkin', '✅ Kelganingiz qayd etildi');
+  bind('btn-lunchout', '/api/attendance/lunch-out', '🍽 Tushlikka chiqishingiz qayd etildi');
+  bind('btn-lunchin', '/api/attendance/lunch-in', '🍽 Tushlikdan qaytishingiz qayd etildi');
+  bind('btn-checkout', '/api/attendance/checkout', '🚪 Ketganingiz qayd etildi');
 }
 
 async function renderEmpLeave(container, employee) {

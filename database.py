@@ -23,9 +23,14 @@ CREATE TABLE IF NOT EXISTS attendance (
     employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
     date TEXT NOT NULL,
     check_in TEXT,
+    lunch_out TEXT,
+    lunch_in TEXT,
     check_out TEXT,
     UNIQUE(employee_id, date)
 );
+
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS lunch_out TEXT;
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS lunch_in TEXT;
 
 CREATE TABLE IF NOT EXISTS leave_requests (
     id SERIAL PRIMARY KEY,
@@ -264,6 +269,44 @@ async def check_out(employee_id: int) -> bool:
     employee = await get_employee_by_id(employee_id)
     if employee:
         await log_activity("🔴", f"{employee['full_name']} ishdan ketdi")
+    return True
+
+
+async def lunch_out(employee_id: int) -> bool:
+    existing = await _fetch_one(
+        "SELECT * FROM attendance WHERE employee_id = ? AND date = ?",
+        (employee_id, _today()),
+    )
+    if not existing or not existing["check_in"] or existing["check_out"]:
+        return False
+    if existing["lunch_out"]:
+        return False
+    await _execute(
+        "UPDATE attendance SET lunch_out = ? WHERE id = ?",
+        (_now(), existing["id"]),
+    )
+    employee = await get_employee_by_id(employee_id)
+    if employee:
+        await log_activity("🍽", f"{employee['full_name']} tushlikka chiqdi")
+    return True
+
+
+async def lunch_in(employee_id: int) -> bool:
+    existing = await _fetch_one(
+        "SELECT * FROM attendance WHERE employee_id = ? AND date = ?",
+        (employee_id, _today()),
+    )
+    if not existing or not existing["lunch_out"] or existing["check_out"]:
+        return False
+    if existing["lunch_in"]:
+        return False
+    await _execute(
+        "UPDATE attendance SET lunch_in = ? WHERE id = ?",
+        (_now(), existing["id"]),
+    )
+    employee = await get_employee_by_id(employee_id)
+    if employee:
+        await log_activity("🍽", f"{employee['full_name']} tushlikdan qaytdi")
     return True
 
 
