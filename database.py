@@ -356,6 +356,16 @@ async def list_pending_leave_requests() -> list[dict]:
     )
 
 
+async def list_all_leave_requests() -> list[dict]:
+    return await _fetch_all(
+        """
+        SELECT lr.*, e.full_name FROM leave_requests lr
+        JOIN employees e ON e.id = lr.employee_id
+        ORDER BY lr.status, lr.created_at DESC
+        """
+    )
+
+
 async def get_leave_request(leave_id: int) -> dict | None:
     return await _fetch_one(
         """

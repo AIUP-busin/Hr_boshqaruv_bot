@@ -191,6 +191,60 @@ html, body {
 .pill.done { background: rgba(47,168,79,0.15); color: var(--success); }
 .pill.new { background: rgba(51,144,236,0.15); color: var(--tg-button); }
 
+.kanban {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 2px 16px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kanban-column {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kanban-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+}
+
+.kanban-header .count {
+  background: rgba(255,255,255,0.65);
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kanban-header.pending { background: rgba(226,161,59,0.18); color: #92640d; }
+.kanban-header.approved,
+.kanban-header.done { background: rgba(34,197,94,0.18); color: #15803d; }
+.kanban-header.rejected { background: rgba(224,69,63,0.18); color: #b91c1c; }
+.kanban-header.new { background: rgba(51,144,236,0.18); color: #1d4ed8; }
+
+body.night-mode .kanban-header .count {
+  background: rgba(255,255,255,0.15);
+}
+
+.kanban-empty {
+  text-align: center;
+  color: var(--tg-hint);
+  font-size: 12.5px;
+  padding: 18px 8px;
+  background: var(--tg-secondary-bg);
+  border-radius: 12px;
+}
+
 .empty-state {
   text-align: center;
   color: var(--tg-hint);
@@ -223,6 +277,38 @@ label.field-label {
 
 .field {
   margin-bottom: 12px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--tg-secondary-bg);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 4px 14px;
+  box-shadow: 0 1px 3px rgba(20,20,30,0.05);
+}
+
+.search-box .search-icon {
+  font-size: 15px;
+  opacity: 0.55;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  flex: 1;
+  font-size: 14px;
+}
+
+.search-box input:focus {
+  outline: none;
+}
+
+body.night-mode .search-box {
+  border-color: rgba(255,255,255,0.12);
 }
 
 .tabbar {
@@ -264,6 +350,61 @@ label.field-label {
 .tab-item.active .icon {
   transform: translateY(-2px) scale(1.08);
   filter: drop-shadow(0 2px 6px rgba(34,197,94,0.5));
+}
+
+/* Keng ekran (planshet/kompyuter Telegram): pastki tab-bar chap sidebar'ga aylanadi */
+@media (min-width: 860px) {
+  #app {
+    padding-bottom: 0;
+  }
+
+  .tabbar {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 232px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 28px 14px;
+    border-top: none;
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .tab-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tab-item .icon {
+    font-size: 18px;
+  }
+
+  .tab-item.active {
+    background: rgba(34,197,94,0.12);
+  }
+
+  .tab-item.active .icon {
+    transform: none;
+  }
+
+  #admin-content,
+  #emp-content {
+    margin-left: 232px;
+    max-width: 640px;
+  }
+
+  .header-gradient {
+    border-radius: 0 0 24px 0;
+  }
 }
 
 .stat-grid {

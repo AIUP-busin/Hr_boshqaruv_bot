@@ -275,7 +275,7 @@ async def admin_delete(employee_id: int, _: int = Depends(require_admin)):
 
 @app.get("/api/admin/leaves")
 async def admin_leaves(_: int = Depends(require_admin)):
-    return await db.list_pending_leave_requests()
+    return await db.list_all_leave_requests()
 
 
 @app.post("/api/admin/leaves/{leave_id}/approve")

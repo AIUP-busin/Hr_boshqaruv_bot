@@ -545,30 +545,26 @@ function openAddEmployeeModal(container, refreshFn) {
   });
 }
 
-async function renderAdminEmployees(container) {
-  const employees = await api('/api/admin/employees');
-  container.innerHTML = `
-    <div class="header"><div class="greeting">👥 Xodimlar</div><div class="subtitle">${employees.length} ta tasdiqlangan xodim</div></div>
-    <div class="content">
-      <button class="btn" id="add-employee-btn">➕ Xodim qo'shish</button>
-      ${employees.length === 0 ? '<div class="empty-state">Hozircha xodim yo\'q</div>' : employees.map((e) => `
-        <div class="card">
-          <div class="employee-row">
-            ${avatarHtml(e.full_name)}
-            <div>
-              <div class="card-title">${escapeHtml(e.full_name)}</div>
-              <div style="font-size:12px;color:var(--tg-hint);">${escapeHtml(e.position || '-')} · ${escapeHtml(e.department || '-')}</div>
-            </div>
-          </div>
-          <div class="card-row"><span class="label">Maosh</span><span>${money(e.salary)}</span></div>
-          <div class="btn-row" style="margin-top:8px;">
-            <button class="btn small secondary" data-salary="${e.id}">💰 Maosh</button>
-            <button class="btn small danger" data-delete="${e.id}">🗑 O'chirish</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
+function employeeListHtml(employees) {
+  if (employees.length === 0) return '<div class="empty-state">Hech kim topilmadi</div>';
+  return employees.map((e) => `
+    <div class="card">
+      <div class="employee-row">
+        ${avatarHtml(e.full_name)}
+        <div>
+          <div class="card-title">${escapeHtml(e.full_name)}</div>
+          <div style="font-size:12px;color:var(--tg-hint);">${escapeHtml(e.position || '-')} · ${escapeHtml(e.department || '-')}</div>
+        </div>
+      </div>
+      <div class="card-row"><span class="label">Maosh</span><span>${money(e.salary)}</span></div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn small secondary" data-salary="${e.id}">💰 Maosh</button>
+        <button class="btn small danger" data-delete="${e.id}">🗑 O'chirish</button>
+      </div>
+    </div>`).join('');
+}
 
-  document.getElementById('add-employee-btn').addEventListener('click', () => openAddEmployeeModal(container, renderAdminEmployees));
+function bindEmployeeListActions(container) {
   container.querySelectorAll('[data-salary]').forEach((btn) => {
     btn.addEventListener('click', () => openSalaryModal(btn.dataset.salary, container));
   });
@@ -579,6 +575,33 @@ async function renderAdminEmployees(container) {
       toast("O'chirildi");
       renderAdminEmployees(container);
     });
+  });
+}
+
+async function renderAdminEmployees(container) {
+  const employees = await api('/api/admin/employees');
+  container.innerHTML = `
+    <div class="header"><div class="greeting">👥 Xodimlar</div><div class="subtitle">${employees.length} ta tasdiqlangan xodim</div></div>
+    <div class="content">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="employee-search" type="text" placeholder="Ism, lavozim yoki bo'lim bo'yicha qidiring..." />
+      </div>
+      <button class="btn" id="add-employee-btn">➕ Xodim qo'shish</button>
+      <div id="employee-list">${employeeListHtml(employees)}</div>
+    </div>`;
+
+  document.getElementById('add-employee-btn').addEventListener('click', () => openAddEmployeeModal(container, renderAdminEmployees));
+  bindEmployeeListActions(container);
+
+  document.getElementById('employee-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = !q ? employees : employees.filter((emp) =>
+      [emp.full_name, emp.position, emp.department].some((f) => (f || '').toLowerCase().includes(q))
+    );
+    const listEl = document.getElementById('employee-list');
+    listEl.innerHTML = employeeListHtml(filtered);
+    bindEmployeeListActions(container);
   });
 }
 
@@ -665,24 +688,34 @@ function openApproveModal(employeeId, container) {
   });
 }
 
-async function renderAdminLeaves(container) {
-  const leaves = await api('/api/admin/leaves');
-  container.innerHTML = `
-    <div class="header"><div class="greeting">🌴 Ta'til so'rovlari</div></div>
-    <div class="content">
-      ${leaves.length === 0 ? '<div class="empty-state">Ko\'rib chiqilmagan so\'rovlar yo\'q</div>' : leaves.map((l) => `
-        <div class="card">
-          <div class="card-title">${escapeHtml(l.full_name)}</div>
-          <div class="card-row"><span class="label">Tur</span><span>${escapeHtml(l.leave_type)}</span></div>
-          <div class="card-row"><span class="label">Sana</span><span>${l.start_date} — ${l.end_date}</span></div>
-          <div class="card-row"><span class="label">Sabab</span><span>${escapeHtml(l.reason || '-')}</span></div>
-          <div class="btn-row" style="margin-top:8px;">
-            <button class="btn small" data-lapprove="${l.id}">✅ Tasdiqlash</button>
-            <button class="btn small danger" data-lreject="${l.id}">❌ Rad etish</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
+function kanbanHtml(columns) {
+  return `<div class="kanban">${columns.map((col) => `
+    <div class="kanban-column">
+      <div class="kanban-header ${col.key}">
+        <span>${col.label}</span>
+        <span class="count">${col.items.length}</span>
+      </div>
+      ${col.items.length === 0 ? '<div class="kanban-empty">Bo\'sh</div>' : col.items.join('')}
+    </div>`).join('')}</div>`;
+}
 
+function leaveCardHtml(l) {
+  const icons = { pending: '⏳', approved: '✅', rejected: '❌' };
+  return `
+    <div class="card">
+      <div class="card-title">${escapeHtml(l.full_name)}</div>
+      <div class="card-row"><span class="label">Tur</span><span>${escapeHtml(l.leave_type)}</span></div>
+      <div class="card-row"><span class="label">Sana</span><span>${l.start_date} — ${l.end_date}</span></div>
+      <div class="card-row"><span class="label">Sabab</span><span>${escapeHtml(l.reason || '-')}</span></div>
+      ${l.status === 'pending' ? `
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn small" data-lapprove="${l.id}">✅ Tasdiqlash</button>
+        <button class="btn small danger" data-lreject="${l.id}">❌ Rad etish</button>
+      </div>` : `<div class="pill ${l.status}" style="margin-top:6px;">${icons[l.status]} ${l.status}</div>`}
+    </div>`;
+}
+
+function bindLeaveActions(container) {
   container.querySelectorAll('[data-lapprove]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       await api(`/api/admin/leaves/${btn.dataset.lapprove}/approve`, { method: 'POST' });
@@ -699,22 +732,48 @@ async function renderAdminLeaves(container) {
   });
 }
 
+async function renderAdminLeaves(container) {
+  const leaves = await api('/api/admin/leaves');
+  const byStatus = (s) => leaves.filter((l) => l.status === s).map(leaveCardHtml);
+
+  container.innerHTML = `
+    <div class="header"><div class="greeting">🌴 Ta'til so'rovlari</div></div>
+    <div class="content">
+      ${kanbanHtml([
+        { key: 'pending', label: '⏳ KUTILAYOTGAN', items: byStatus('pending') },
+        { key: 'approved', label: '✅ TASDIQLANGAN', items: byStatus('approved') },
+        { key: 'rejected', label: '❌ RAD ETILGAN', items: byStatus('rejected') },
+      ])}
+    </div>`;
+
+  bindLeaveActions(container);
+}
+
+function taskCardHtml(t) {
+  return `
+    <div class="card">
+      <div class="card-title">${escapeHtml(t.title)}</div>
+      <div class="card-row"><span class="label">Xodim</span><span>${escapeHtml(t.full_name)}</span></div>
+      <div class="card-row"><span class="label">Muddat</span><span>${t.deadline || '-'}</span></div>
+    </div>`;
+}
+
 async function renderAdminTasks(container) {
   const [tasks, employees] = await Promise.all([
     api('/api/admin/tasks'),
     api('/api/admin/employees'),
   ]);
+  const newTasks = tasks.filter((t) => t.status !== 'done').map(taskCardHtml);
+  const doneTasks = tasks.filter((t) => t.status === 'done').map(taskCardHtml);
+
   container.innerHTML = `
     <div class="header"><div class="greeting">📋 Vazifalar</div></div>
     <div class="content">
       <button class="btn" id="new-task">+ Yangi vazifa</button>
-      ${tasks.length === 0 ? '<div class="empty-state">Hozircha vazifalar yo\'q</div>' : tasks.map((t) => `
-        <div class="card">
-          <div class="card-title">${escapeHtml(t.title)}</div>
-          <div class="card-row"><span class="label">Xodim</span><span>${escapeHtml(t.full_name)}</span></div>
-          <div class="card-row"><span class="label">Muddat</span><span>${t.deadline || '-'}</span></div>
-          <div class="card-row"><span class="label">Holat</span><span class="pill ${t.status}">${t.status === 'done' ? '✅ Bajarilgan' : '🕒 Yangi'}</span></div>
-        </div>`).join('')}
+      ${kanbanHtml([
+        { key: 'new', label: '🕒 YANGI', items: newTasks },
+        { key: 'done', label: '✅ BAJARILGAN', items: doneTasks },
+      ])}
     </div>`;
 
   document.getElementById('new-task').addEventListener('click', () => {
