@@ -321,7 +321,7 @@ async def get_attendance_report(date: str | None = None) -> list[dict]:
     date = date or _today()
     return await _fetch_all(
         """
-        SELECT e.full_name, e.department, a.check_in, a.check_out
+        SELECT e.full_name, e.department, a.check_in, a.lunch_out, a.lunch_in, a.check_out
         FROM employees e
         LEFT JOIN attendance a ON a.employee_id = e.id AND a.date = ?
         WHERE e.status = 'approved'

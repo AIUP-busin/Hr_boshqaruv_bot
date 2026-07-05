@@ -354,4 +354,9 @@ async def admin_stats(_: int = Depends(require_admin)):
     return await db.get_stats()
 
 
+@app.get("/api/admin/attendance")
+async def admin_attendance(_: int = Depends(require_admin)):
+    return await db.get_attendance_report()
+
+
 app.mount("/", StaticFiles(directory=BASE_DIR / "static", html=True), name="static")

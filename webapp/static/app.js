@@ -184,6 +184,7 @@ function tabbarHtml(role) {
   const adminTabs = [
     ['home', '🏠', 'Bosh sahifa'],
     ['employees', '👥', 'Xodimlar'],
+    ['attendance', '📅', 'Davomat'],
     ['pending', '🆕', "So'rovlar"],
     ['leaves', '🌴', "Ta'til"],
     ['tasks', '📋', 'Vazifalar'],
@@ -399,9 +400,47 @@ async function renderAdminShell() {
   const container = document.getElementById('admin-content');
   if (ADMIN_TAB === 'home') return renderAdminHome(container);
   if (ADMIN_TAB === 'employees') return renderAdminEmployees(container);
+  if (ADMIN_TAB === 'attendance') return renderAdminAttendance(container);
   if (ADMIN_TAB === 'pending') return renderAdminPending(container);
   if (ADMIN_TAB === 'leaves') return renderAdminLeaves(container);
   if (ADMIN_TAB === 'tasks') return renderAdminTasks(container);
+}
+
+function attendanceStatusInfo(row) {
+  if (!row.check_in) return { icon: '❌', label: 'Kelmadi', cls: 'rejected' };
+  if (row.check_out) return { icon: '🚪', label: 'Ketdi', cls: 'done' };
+  if (row.lunch_out && !row.lunch_in) return { icon: '🍽', label: 'Tushlikda', cls: 'pending' };
+  return { icon: '🟢', label: 'Ishda', cls: 'new' };
+}
+
+async function renderAdminAttendance(container) {
+  const rows = await api('/api/admin/attendance');
+  const t = (v) => (v ? v.slice(11, 16) : '--:--');
+
+  container.innerHTML = `
+    <div class="header"><div class="greeting">📅 Bugungi davomat</div><div class="subtitle">${rows.length} ta xodim</div></div>
+    <div class="content">
+      ${rows.length === 0 ? '<div class="empty-state">Hozircha xodim yo\'q</div>' : rows.map((r) => {
+        const s = attendanceStatusInfo(r);
+        return `
+        <div class="card">
+          <div class="employee-row" style="margin-bottom:10px;">
+            ${avatarHtml(r.full_name)}
+            <div style="flex:1;">
+              <div class="card-title">${escapeHtml(r.full_name)}</div>
+              <div style="font-size:12px;color:var(--tg-hint);">${escapeHtml(r.department || '-')}</div>
+            </div>
+            <div class="pill ${s.cls}">${s.icon} ${s.label}</div>
+          </div>
+          <div class="attendance-status four">
+            <div class="box"><div class="time">${t(r.check_in)}</div><div class="label">Keldi</div></div>
+            <div class="box"><div class="time">${t(r.lunch_out)}</div><div class="label">Tushlikka</div></div>
+            <div class="box"><div class="time">${t(r.lunch_in)}</div><div class="label">Tushlikdan</div></div>
+            <div class="box"><div class="time">${t(r.check_out)}</div><div class="label">Ketdi</div></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 const AVATAR_PALETTE = ['#22c55e', '#15803d', '#4ade80', '#0d9488', '#65a30d', '#059669'];
