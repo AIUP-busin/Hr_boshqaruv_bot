@@ -177,6 +177,36 @@ html, body {
   flex: 1;
 }
 
+.icon-btn {
+  border: none;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 9px;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+  opacity: 0.8;
+}
+
+.icon-btn.danger {
+  background: rgba(224,69,63,0.12);
+}
+
+body.night-mode .icon-btn {
+  background: rgba(255,255,255,0.08);
+}
+
 .pill {
   display: inline-block;
   font-size: 12px;

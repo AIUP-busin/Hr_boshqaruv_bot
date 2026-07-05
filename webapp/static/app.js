@@ -590,22 +590,23 @@ function employeeListHtml(employees) {
     <div class="card">
       <div class="employee-row">
         ${avatarHtml(e.full_name)}
-        <div>
+        <div style="flex:1;">
           <div class="card-title">${escapeHtml(e.full_name)}</div>
           <div style="font-size:12px;color:var(--tg-hint);">${escapeHtml(e.position || '-')} · ${escapeHtml(e.department || '-')}</div>
         </div>
+        <button class="icon-btn" data-edit="${e.id}" title="Tahrirlash">✏️</button>
+        <button class="icon-btn danger" data-delete="${e.id}" title="O'chirish">🗑</button>
       </div>
       <div class="card-row"><span class="label">Maosh</span><span>${money(e.salary)}</span></div>
-      <div class="btn-row" style="margin-top:8px;">
-        <button class="btn small secondary" data-salary="${e.id}">💰 Maosh</button>
-        <button class="btn small danger" data-delete="${e.id}">🗑 O'chirish</button>
-      </div>
     </div>`).join('');
 }
 
-function bindEmployeeListActions(container) {
-  container.querySelectorAll('[data-salary]').forEach((btn) => {
-    btn.addEventListener('click', () => openSalaryModal(btn.dataset.salary, container));
+function bindEmployeeListActions(container, employees) {
+  container.querySelectorAll('[data-edit]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const emp = employees.find((e) => String(e.id) === btn.dataset.edit);
+      openEditEmployeeModal(emp, container);
+    });
   });
   container.querySelectorAll('[data-delete]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -631,7 +632,7 @@ async function renderAdminEmployees(container) {
     </div>`;
 
   document.getElementById('add-employee-btn').addEventListener('click', () => openAddEmployeeModal(container, renderAdminEmployees));
-  bindEmployeeListActions(container);
+  bindEmployeeListActions(container, employees);
 
   document.getElementById('employee-search').addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
@@ -640,26 +641,44 @@ async function renderAdminEmployees(container) {
     );
     const listEl = document.getElementById('employee-list');
     listEl.innerHTML = employeeListHtml(filtered);
-    bindEmployeeListActions(container);
+    bindEmployeeListActions(container, filtered);
   });
 }
 
-function openSalaryModal(employeeId, container) {
+function openEditEmployeeModal(employee, container) {
   openModal(`
-    <h3>💰 Maosh belgilash</h3>
+    <h3>✏️ ${escapeHtml(employee.full_name)}ni tahrirlash</h3>
     <div class="field">
-      <label class="field-label">Yangi oylik maosh (so'm)</label>
-      <input id="salary-amount" type="number" placeholder="5000000" />
+      <label class="field-label">Lavozim</label>
+      <input id="edit-position" type="text" value="${escapeHtml(employee.position || '')}" />
     </div>
-    <button class="btn" id="salary-submit">Saqlash</button>`);
+    <div class="field">
+      <label class="field-label">Bo'lim</label>
+      <input id="edit-department" type="text" value="${escapeHtml(employee.department || '')}" />
+    </div>
+    <div class="field">
+      <label class="field-label">Telefon</label>
+      <input id="edit-phone" type="tel" value="${escapeHtml(employee.phone || '')}" />
+    </div>
+    <div class="field">
+      <label class="field-label">Oylik maosh (so'm)</label>
+      <input id="edit-salary" type="number" value="${employee.salary || 0}" />
+    </div>
+    <button class="btn" id="edit-submit">Saqlash</button>`);
 
-  document.getElementById('salary-submit').addEventListener('click', async () => {
-    const amount = parseFloat(document.getElementById('salary-amount').value);
-    if (!amount) return toast("To'g'ri son kiriting");
+  document.getElementById('edit-submit').addEventListener('click', async () => {
+    const position = document.getElementById('edit-position').value.trim();
+    const department = document.getElementById('edit-department').value.trim();
+    const phone = document.getElementById('edit-phone').value.trim();
+    const salary = parseFloat(document.getElementById('edit-salary').value) || 0;
+    if (!position || !department) return toast("Lavozim va bo'limni to'ldiring");
     try {
-      await api('/api/admin/salary', { method: 'POST', body: JSON.stringify({ employee_id: parseInt(employeeId), amount }) });
+      await api(`/api/admin/employees/${employee.id}/update`, {
+        method: 'POST',
+        body: JSON.stringify({ position, department, salary, phone }),
+      });
       closeModal();
-      toast('✅ Maosh yangilandi');
+      toast('✅ Ma\'lumotlar yangilandi');
       renderAdminEmployees(container);
     } catch (e) { toast(e.message); }
   });

@@ -333,6 +333,24 @@ async def admin_salary(body: SalaryBody, _: int = Depends(require_admin)):
     return {"ok": True}
 
 
+class EmployeeUpdateBody(BaseModel):
+    position: str
+    department: str
+    salary: float
+    phone: str
+
+
+@app.post("/api/admin/employees/{employee_id}/update")
+async def admin_update_employee(employee_id: int, body: EmployeeUpdateBody, _: int = Depends(require_admin)):
+    await db.update_employee(employee_id, body.position, body.department, body.salary, body.phone)
+    employee = await db.get_employee_by_id(employee_id)
+    await send_telegram_message(
+        employee["telegram_id"],
+        "✏️ Sizning ma'lumotlaringiz yangilandi. Profilingizni tekshirib ko'ring.",
+    )
+    return {"ok": True}
+
+
 class AnnouncementBody(BaseModel):
     text: str
 

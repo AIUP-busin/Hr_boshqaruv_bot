@@ -218,6 +218,16 @@ async def set_salary(employee_id: int, salary: float) -> None:
         await log_activity("💰", f"{employee['full_name']} maoshi {salary:,.0f} so'mga yangilandi".replace(",", " "))
 
 
+async def update_employee(employee_id: int, position: str, department: str, salary: float, phone: str) -> None:
+    await _execute(
+        "UPDATE employees SET position = ?, department = ?, salary = ?, phone = ? WHERE id = ?",
+        (position, department, salary, phone, employee_id),
+    )
+    employee = await get_employee_by_id(employee_id)
+    if employee:
+        await log_activity("✏️", f"{employee['full_name']} ma'lumotlari tahrirlandi")
+
+
 async def list_employees(status: str = "approved") -> list[dict]:
     return await _fetch_all(
         "SELECT * FROM employees WHERE status = ? ORDER BY full_name", (status,)
